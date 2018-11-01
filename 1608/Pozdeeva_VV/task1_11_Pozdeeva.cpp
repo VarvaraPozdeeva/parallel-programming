@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
 	{
         if (argc < 3)
         {
-            cout << "Enter Matrix Sizes\n N:" << endl;
+            cout << "Enter Matrix Sizes\nN:" << endl;
             cin >> N;
             cout << "M:" << endl;
             cin >> M;
@@ -53,18 +53,23 @@ int main(int argc, char *argv[])
         //рассылаем строки матрицы по процессам
 
         k = N / ProcNum; // количество строк для каждого процесса
-        l = N % ProcNum; //оставшееся количество, первому процессу
-
+        l = N % ProcNum; //оставшееся количество, первому процессу		
+		if (k == 0)
+			k = 1;
+		times = MPI_Wtime();
+		
 		for(int i =1; i< ProcNum; i++)
             MPI_Send(matrix + (i)*k*M, k*M, MPI_INT, i, i, MPI_COMM_WORLD);
 	}
 	
-    times = MPI_Wtime();
+   
 
     //вычисляем суммы, и возвращаем резултат в нулевой процесс
 	if(ProcRank != 0)
 	{
         k = N / ProcNum;
+		if (k == 0)
+			k = 1;
 		int *tmp = new int[M*k];
         int *res = new int[k];
         int sum;
@@ -105,14 +110,15 @@ int main(int argc, char *argv[])
         }
 	}
 	
-    printf("Time of Proc # %d is  %.10f\n", ProcRank, MPI_Wtime() - times);    
+   
 
 	if(ProcRank == 0)
-	{
+	{		
         for (int i = 1; i< ProcNum; i++)
         {
 			MPI_Recv(result + i*k, k, MPI_INT, MPI_ANY_SOURCE, i, MPI_COMM_WORLD, &status);				
 		}
+		printf("Time of Proc # %d is  %.10f\n", ProcRank, MPI_Wtime() - times);
         //вывод матрицы и результатов
 		printf(" Matrix %dx%d \n", N, M);
 		printf("----------------------------------------\n");
@@ -124,6 +130,7 @@ int main(int argc, char *argv[])
 			}
 			printf("	sum = %d\n", result[i] );
 		}		 
+		
     }	
 
     if (matrix != nullptr)
@@ -132,5 +139,6 @@ int main(int argc, char *argv[])
         delete result;
     
     MPI_Finalize();
+	
 	return 0;
 }
